@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Rank Stocks · The Investor Panel</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🏛️</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=Cinzel:wght@500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<header class="band">
+  <div class="wrap">
+    <nav class="site" aria-label="Site">
+      <a class="brand" href="index.html">The Investor Panel</a>
+      <span class="links"><a href="index.html">Meet the Panel</a><a href="indices.html">Indices</a><a href="rank.html" aria-current="page">Rank Stocks</a><a href="score.html">Score a Stock</a><a href="trends.html">Trends</a></span>
+    </nav>
+    <h1>Rank Stocks</h1>
+    <p>Every U.S.-listed company with SEC filings, scored on all eight investors’ rules. See which stocks each investor would pick, or which ones the whole panel agrees on.</p>
+  </div>
+</header>
+
+<main class="wrap">
+  <p class="status" id="dataStatus" role="status">Loading the rankings…</p>
+  <div id="content" class="hidden">
+    <section>
+      <div class="controls">
+        <label class="f">Stocks<select id="universe">
+          <option value="">All U.S. stocks</option>
+          <option value="S">S&amp;P 500</option>
+          <option value="N">Nasdaq-100</option>
+          <option value="D">Dow Jones</option>
+        </select></label>
+        <label class="f">Investor<select id="who"></select></label>
+        <label class="f">Sector<select id="sector"><option value="">All sectors</option></select></label>
+        <label class="f">Company size<select id="size">
+          <option value="">Any size</option>
+          <option value="L">Large (over $10B)</option>
+          <option value="M">Mid ($2B–$10B)</option>
+          <option value="S">Small ($300M–$2B)</option>
+          <option value="X">Tiny (under $300M)</option>
+        </select></label>
+        <label class="f">Search<input type="text" id="q" placeholder="Ticker or name" autocomplete="off" spellcheck="false"></label>
+        <label class="f">Show<select id="limit"><option value="25">Top 25</option><option value="50">Top 50</option><option value="100">Top 100</option><option value="500">Top 500</option></select></label>
+      </div>
+      <p class="tiny" id="settingsNote"></p>
+    </section>
+
+    <section>
+      <h2>Each investor’s favorite</h2>
+      <p class="sub">The best-scoring stock for each investor among the stocks you’ve picked above. Ties go to the company that passed more tests, then to the bigger company.</p>
+      <div class="favs" id="favs"></div>
+    </section>
+
+    <section>
+      <h2>The ranking</h2>
+      <p class="sub">Click a company to see its full report card.</p>
+      <div class="panel-box board-scroll"><table class="board" id="board"></table></div>
+    </section>
+  </div>
+
+  <footer>
+    Verdicts are rule-based readings of each investor’s published criteria, applied to annual 10-K figures. They are not those investors’ actual opinions and not financial advice. Tiny companies often have thin or unusual filings, so treat their scores with extra care. Slegers’ forecast points (16–18) aren’t scored here. Financial data from SEC filings; prices and sectors from Nasdaq; index member lists from Wikipedia.
+  </footer>
+</main>
+
+<script src="assets/core.js"></script>
+<script src="assets/ui.js"></script>
+<script src="assets/rank.js"></script>
+</body>
+</html>

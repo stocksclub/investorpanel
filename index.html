@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Meet the Panel · The Investor Panel</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🏛️</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=Cinzel:wght@500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<header class="band">
+  <div class="wrap">
+    <nav class="site" aria-label="Site">
+      <a class="brand" href="index.html">The Investor Panel</a>
+      <span class="links"><a href="index.html" aria-current="page">Meet the Panel</a><a href="indices.html">Indices</a><a href="rank.html">Rank Stocks</a><a href="score.html">Score a Stock</a><a href="trends.html">Trends</a></span>
+    </nav>
+    <h1>Meet the Panel</h1>
+    <p>Who are these eight investors, and what do their tests actually measure? Pick an investor to learn his story and every number on his checklist, explained step by step with examples.</p>
+  </div>
+</header>
+
+<main class="wrap">
+  <section>
+    <div class="lpicker" id="lpicker" role="group" aria-label="Choose an investor"></div>
+  </section>
+
+  <section class="panel-box lprofile" id="lprofile"></section>
+
+  <section>
+    <div class="lhead">
+      <h2 id="lcount"></h2>
+      <button class="btn ghost" id="expandAll" type="button">Expand all</button>
+    </div>
+    <p class="sub">Every example uses PepsiCo’s real numbers from its 2024 annual report, rounded so the math is easy to follow. Where a stock price is needed, the examples pretend PepsiCo’s shares cost $150; see Score a Stock for today’s real price and numbers.</p>
+    <div id="llist"></div>
+  </section>
+
+  <footer>
+    These explanations describe each investor’s published rules as this site applies them. They are for learning, not financial advice.
+  </footer>
+</main>
+
+<script>if (/[?&]t=/.test(location.search)) location.replace("score.html" + location.search);</script>
+<script src="assets/core.js"></script>
+<script src="assets/ui.js"></script>
+<script src="assets/learn.js"></script>
+</body>
+</html>

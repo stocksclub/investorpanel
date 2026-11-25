@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Trends · The Investor Panel</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🏛️</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=Cinzel:wght@500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<header class="band">
+  <div class="wrap">
+    <nav class="site" aria-label="Site">
+      <a class="brand" href="index.html">The Investor Panel</a>
+      <span class="links"><a href="index.html">Meet the Panel</a><a href="indices.html">Indices</a><a href="rank.html">Rank Stocks</a><a href="score.html">Score a Stock</a><a href="trends.html" aria-current="page">Trends</a></span>
+    </nav>
+    <h1>Trends</h1>
+    <p>Pick a company and an investor to see how the numbers he cares about have changed over the years, next to the company’s sector.</p>
+  </div>
+</header>
+
+<main class="wrap">
+  <section>
+    <div class="panel-box finder">
+      <div class="finder-row">
+        <label class="f grow">Ticker<input type="text" id="ticker" placeholder="AAPL" autocomplete="off" spellcheck="false" class="big"></label>
+        <label class="f">Compare with sector<select id="cmpSector"><option value="">No comparison</option></select></label>
+      </div>
+      <div class="status" id="status" role="status"></div>
+    </div>
+  </section>
+
+  <section id="out" class="hidden">
+    <h2 id="coName"></h2>
+    <div class="picker" id="picker" role="group" aria-label="Choose an investor"></div>
+    <div class="legend" id="legend"></div>
+    <div class="panel-box">
+      <h3 class="chart-title">Share of his tests passed, year by year</h3>
+      <p class="tiny" style="margin:0 0 6px">Each point scores the company as if that year’s report were the latest. Early years have less history behind them, so some long-term tests can’t be scored yet.</p>
+      <div id="scoreChart"></div>
+    </div>
+    <p class="tiny" id="priceNote"></p>
+    <div class="chart-grid" id="charts"></div>
+  </section>
+
+  <footer>
+    Charts use each company’s annual 10-K reports. Price-based numbers (like P/E) use the share price at the end of each fiscal year and are available for S&amp;P 500, Nasdaq-100 and Dow companies. Earlier years are adjusted for stock splits so per-share numbers line up. Sectors are built from the S&amp;P 500 companies in them, weighted by market value, the way sector funds like XLK are built. Not financial advice.
+  </footer>
+</main>
+
+<script src="assets/core.js"></script>
+<script src="assets/ui.js"></script>
+<script src="assets/trends.js"></script>
+</body>
+</html>

@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Score a Stock · The Investor Panel</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🏛️</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=Cinzel:wght@500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<header class="band">
+  <div class="wrap">
+    <nav class="site" aria-label="Site">
+      <a class="brand" href="index.html">The Investor Panel</a>
+      <span class="links"><a href="index.html">Meet the Panel</a><a href="indices.html">Indices</a><a href="rank.html">Rank Stocks</a><a href="score.html" aria-current="page">Score a Stock</a><a href="trends.html">Trends</a></span>
+    </nav>
+    <h1>Score a Stock</h1>
+    <p>Type a ticker and see how eight famous investors would size up the company, using the rules they published, next to its sector.</p>
+  </div>
+</header>
+
+<main class="wrap">
+  <section id="savedSec" class="hidden">
+    <h2>Your saved stocks</h2>
+    <p class="sub">Open one to re-score it with today’s price.</p>
+    <div class="saved" id="savedList"></div>
+  </section>
+
+  <section>
+    <h2>Find a company</h2>
+    <p class="sub" id="siteNote">Type a ticker to load a company’s SEC filings and today’s price.</p>
+    <div class="panel-box finder">
+      <div class="finder-row">
+        <label class="f grow">Ticker<input type="text" id="ticker" placeholder="AAPL" autocomplete="off" spellcheck="false" class="big"></label>
+        <label class="f">Share price ($)<input type="number" id="price" step="any" min="0" placeholder="0.00"></label>
+        <label class="f">Compare with sector<select id="cmpSector"><option value="">No comparison</option></select></label>
+      </div>
+      <div class="status" id="loadStatus" role="status"></div>
+      <p class="tiny" style="margin:4px 0 0">Prices update every weekday evening. <a id="quoteLink" href="https://finance.yahoo.com/" target="_blank" rel="noopener">Check a live quote</a> and type a newer price if you like.</p>
+
+      <details class="more" id="manualBox">
+        <summary>Company not found? Load it from the SEC yourself</summary>
+        <div class="steps" style="margin-top:12px">
+          <div class="step">
+            <div class="num">1</div>
+            <h3>Find its SEC number</h3>
+            <label class="f">SEC CIK number<input type="text" id="cik" placeholder="auto" inputmode="numeric" autocomplete="off"></label>
+            <p id="cikHelp">Popular tickers fill in the CIK automatically.</p>
+          </div>
+          <div class="step">
+            <div class="num">2</div>
+            <h3>Get the SEC data file</h3>
+            <a class="btn primary" id="secLink" href="#" target="_blank" rel="noopener" aria-disabled="true">Open SEC data file</a>
+            <p>When it opens, save the page with Ctrl+S (Cmd+S on a Mac).</p>
+          </div>
+          <div class="step">
+            <div class="num">3</div>
+            <h3>Drop it here</h3>
+            <label class="drop" id="drop">
+              <input type="file" id="file" accept=".json,application/json">
+              <strong>Drop the .json file here</strong><br>or click to choose it
+            </label>
+          </div>
+        </div>
+      </details>
+
+      <details class="more">
+        <summary>Settings: Treasury yield and inflation</summary>
+        <div class="finder-row" style="margin-top:12px">
+          <label class="f">10-yr Treasury (%)<input type="number" id="tsy" step="any" min="0" value="4.5"></label>
+          <label class="f">Price index (CPI-U)<input type="number" id="cpi" step="any" min="1" value="337.511"></label>
+        </div>
+        <p class="tiny">Buffett compares a stock’s earnings with the <a href="https://www.cnbc.com/quotes/US10Y" target="_blank" rel="noopener">10-year Treasury yield</a>. Graham’s size rule is adjusted with the <a href="https://www.bls.gov/cpi/" target="_blank" rel="noopener">CPI</a>, which updates monthly.</p>
+      </details>
+    </div>
+  </section>
+
+  <section id="results" class="hidden">
+    <div class="company">
+      <h2 id="coName"></h2>
+      <div class="row" style="flex:0 0 auto">
+        <button class="btn ghost" id="saveBtn" type="button">Save to my list</button>
+      </div>
+    </div>
+    <div class="facts" id="facts"></div>
+    <div class="notice hidden" id="priceNotice">Enter a share price above to finish the valuation tests.</div>
+
+    <div class="judges" id="judges"></div>
+
+    <div class="panel-box detail" id="detail"></div>
+
+    <div class="panel-box hidden" id="estBox" style="margin-top:14px">
+      <h3 style="font-family:var(--display);margin:0 0 4px;font-size:1.1rem">Analyst forecasts for Slegers’ points 16–18</h3>
+      <p class="tiny" style="margin:0 0 12px">SEC filings don’t include forecasts. Copy them from the <a id="estLink" href="https://finance.yahoo.com/" target="_blank" rel="noopener">Analysis tab on Yahoo Finance</a> (the revenue estimate, earnings estimate and growth estimate tables). Type percentages, like 8 for 8%. The page turns this year and next year into a 2-year average for you.</p>
+      <div class="estgrid">
+        <label class="f">Revenue growth, this year (%)<input type="number" step="any" data-e="rev1"></label>
+        <label class="f">Revenue growth, next year (%)<input type="number" step="any" data-e="rev2"></label>
+        <label class="f">EPS growth, this year (%)<input type="number" step="any" data-e="eps1"></label>
+        <label class="f">EPS growth, next year (%)<input type="number" step="any" data-e="eps2"></label>
+        <label class="f">Long-term EPS growth, per year (%)<input type="number" step="any" data-e="lt"></label>
+      </div>
+    </div>
+
+
+    <section class="panel-box">
+      <details class="edit">
+        <summary>Check or fix the numbers</summary>
+        <p class="tiny" style="margin:8px 0 0">Pulled automatically from the SEC file. Dollar amounts are in millions; per-share amounts in dollars. If a value is blank or looks wrong (it happens with banks and unusual companies), type the number from the 10-K and every score updates.</p>
+        <div class="row" style="max-width:360px;margin-top:12px">
+          <label class="f">Shares outstanding (millions)<input type="number" step="any" id="sharesIn"></label>
+        </div>
+        <div class="edit-scroll"><table class="edit" id="editTable"></table></div>
+      </details>
+    </section>
+  </section>
+
+  <footer>
+    Verdicts are rule-based readings of each investor’s published criteria, applied to annual 10-K figures. They are not those investors’ actual opinions and not financial advice. Data comes from SEC XBRL filings; companies that report under international rules (most 20-F filers) aren’t supported.
+  </footer>
+</main>
+
+<script src="assets/core.js"></script>
+<script src="assets/ui.js"></script>
+<script src="assets/panel.js"></script>
+</body>
+</html>

@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Indices · The Investor Panel</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🏛️</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=Cinzel:wght@500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<header class="band">
+  <div class="wrap">
+    <nav class="site" aria-label="Site">
+      <a class="brand" href="index.html">The Investor Panel</a>
+      <span class="links"><a href="index.html">Meet the Panel</a><a href="indices.html" aria-current="page">Indices</a><a href="rank.html">Rank Stocks</a><a href="score.html">Score a Stock</a><a href="trends.html">Trends</a></span>
+    </nav>
+    <h1>Indices</h1>
+    <p><b class="bogle-lead">Buy it like Bogle.</b> Jack Bogle, the founder of Vanguard, created the first index fund for everyday investors and believed most people should simply own the whole market. So what exactly are you buying when you do? Each index below is scored as if it were one company on all eight investors’ rules, with every holding counted by its weight in the index.</p>
+  </div>
+</header>
+
+<main class="wrap">
+  <p class="status" id="dataStatus" role="status">Loading the index data…</p>
+  <div id="content" class="hidden">
+    <section>
+      <div class="seg" role="group" aria-label="Choose an index" id="seg"></div>
+      <h2 id="ixName"></h2>
+      <p class="sub" id="ixAbout"></p>
+      <div class="facts" id="ixFacts"></div>
+      <div class="judges" id="ixJudges"></div>
+      <div class="panel-box detail" id="ixDetail"></div>
+    </section>
+
+    <section>
+      <h2>Biggest holdings</h2>
+      <p class="sub" id="holdNote"></p>
+      <div class="panel-box"><table class="holdings" id="holdings"></table></div>
+    </section>
+
+    <section>
+      <div class="controls">
+        <label class="f">10-yr Treasury (%)<input type="number" id="tsy" step="any" min="0"></label>
+        <label class="f">Price index (CPI-U)<input type="number" id="cpi" step="any" min="1"></label>
+        <p class="tiny" style="margin:0 0 8px;max-width:46ch">Buffett compares earnings with the <a href="https://www.cnbc.com/quotes/US10Y" target="_blank" rel="noopener">10-year Treasury yield</a>; Graham’s size rule uses the <a href="https://www.bls.gov/cpi/" target="_blank" rel="noopener">CPI</a>. Changes here also apply on the Score a Stock page.</p>
+      </div>
+    </section>
+  </div>
+
+  <footer>
+    How the weighting works: a market-value-weighted index owns the same slice of every company, so its share of each company’s sales, profits, debt and value adds up directly. The Dow is price-weighted, so it’s treated as owning one share of each company. Banks, insurers and real-estate trusts are left out of the scoring because their financial statements don’t fit these tests, and so are companies with fewer than 11 years of SEC data, so growth rates compare the same companies year to year; the remaining weights are scaled up to fill in. Share counts are total shares, not the “float” the index makers use. Slegers’ forecast points (16–18) aren’t scored here. Verdicts are rule-based readings of each investor’s published criteria and not financial advice. Member lists from Wikipedia; financial data from SEC filings; prices from Nasdaq.
+  </footer>
+</main>
+
+<script src="assets/core.js"></script>
+<script src="assets/ui.js"></script>
+<script src="assets/indices.js"></script>
+</body>
+</html>

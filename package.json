@@ -1,0 +1,5 @@
+{
+  "name": "investor-panel",
+  "private": true,
+  "dependencies": { "yauzl": "3.1.3" }
+}
