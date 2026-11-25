@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Score a Stock · The Investor Panel</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🏛️</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<header class="band">
+  <div class="wrap">
+    <nav class="site" aria-label="Site">
+      <a class="brand" href="index.html">The Investor Panel</a>
+      <span class="links"><a href="index.html" aria-current="page">Score a stock</a><a href="sp500.html">S&amp;P 500</a></span>
+    </nav>
+    <h1>Score a stock</h1>
+    <p>Load any U.S. company’s SEC filings and see how eight famous investors would size it up, using the rules they published. All the math runs in your browser, so analyzing a stock uses none of your Claude usage.</p>
+  </div>
+</header>
+
+<main class="wrap">
+  <section id="savedSec" class="hidden">
+    <h2>Your saved stocks</h2>
+    <p class="sub">Open one to re-score it with today’s price.</p>
+    <div class="saved" id="savedList"></div>
+  </section>
+
+  <section>
+    <h2>Load a company</h2>
+    <p class="sub">The SEC publishes every company’s reported financials as one free data file. You download it once, drop it here, and the page does the rest.</p>
+    <p class="sub" id="siteNote"></p>
+    <div class="steps">
+      <div class="step">
+        <div class="num">1</div>
+        <h3>Pick the company</h3>
+        <div class="row">
+          <label class="f">Ticker<input type="text" id="ticker" placeholder="AAPL" autocomplete="off" spellcheck="false"></label>
+          <label class="f">SEC CIK number<input type="text" id="cik" placeholder="auto" inputmode="numeric" autocomplete="off"></label>
+        </div>
+        <p id="cikHelp">Popular tickers fill in the CIK automatically.</p>
+      </div>
+      <div class="step">
+        <div class="num">2</div>
+        <h3>Get the SEC data file</h3>
+        <a class="btn primary" id="secLink" href="#" target="_blank" rel="noopener" aria-disabled="true">Open SEC data file</a>
+        <p>When it opens, save the page with Ctrl+S (Cmd+S on a Mac). Then drop the saved .json file below.</p>
+        <label class="drop" id="drop">
+          <input type="file" id="file" accept=".json,application/json">
+          <strong>Drop the .json file here</strong><br>or click to choose it
+        </label>
+        <div class="status" id="loadStatus" role="status"></div>
+      </div>
+      <div class="step">
+        <div class="num">3</div>
+        <h3>Enter today’s price</h3>
+        <div class="row">
+          <label class="f">Share price ($)<input type="number" id="price" step="any" min="0" placeholder="0.00"></label>
+          <label class="f">10-yr Treasury (%)<input type="number" id="tsy" step="any" min="0" value="4.5"></label>
+        </div>
+        <p>Filings don’t include the stock price. <a id="quoteLink" href="https://finance.yahoo.com/" target="_blank" rel="noopener">Look up a quote</a>. <a href="https://www.cnbc.com/quotes/US10Y" target="_blank" rel="noopener">Check today’s 10-year Treasury yield</a> now and then; Buffett compares a stock’s earnings to it.</p>
+        <label class="f">Price index (CPI-U) for inflation adjustments<input type="number" id="cpi" step="any" min="1" value="337.511"></label>
+        <p class="tiny">337.511 is the October 2026 reading. It updates monthly at <a href="https://www.bls.gov/cpi/" target="_blank" rel="noopener">BLS.gov</a>.</p>
+      </div>
+    </div>
+  </section>
+
+  <section id="results" class="hidden">
+    <div class="company">
+      <h2 id="coName"></h2>
+      <div class="row" style="flex:0 0 auto">
+        <button class="btn ghost" id="saveBtn" type="button">Save to my list</button>
+      </div>
+    </div>
+    <div class="facts" id="facts"></div>
+    <div class="notice hidden" id="priceNotice">Enter today’s share price in step 3 to finish the valuation tests.</div>
+
+    <div class="judges" id="judges"></div>
+
+    <div class="panel-box detail" id="detail"></div>
+
+    <div class="panel-box hidden" id="estBox" style="margin-top:14px">
+      <h3 style="font-family:var(--display);margin:0 0 4px;font-size:1.1rem">Analyst forecasts for Slegers’ points 16–18</h3>
+      <p class="tiny" style="margin:0 0 12px">SEC filings don’t include forecasts. Copy them from the <a id="estLink" href="https://finance.yahoo.com/" target="_blank" rel="noopener">Analysis tab on Yahoo Finance</a> (the revenue estimate, earnings estimate and growth estimate tables). Type percentages, like 8 for 8%. The page turns this year and next year into a 2-year average for you.</p>
+      <div class="estgrid">
+        <label class="f">Revenue growth, this year (%)<input type="number" step="any" data-e="rev1"></label>
+        <label class="f">Revenue growth, next year (%)<input type="number" step="any" data-e="rev2"></label>
+        <label class="f">EPS growth, this year (%)<input type="number" step="any" data-e="eps1"></label>
+        <label class="f">EPS growth, next year (%)<input type="number" step="any" data-e="eps2"></label>
+        <label class="f">Long-term EPS growth, per year (%)<input type="number" step="any" data-e="lt"></label>
+      </div>
+    </div>
+
+    <section class="panel-box" id="aiSec" hidden>
+      <h2>Beyond the numbers</h2>
+      <p class="sub" style="margin-bottom:10px">Fisher and Buffett cared about things filings can’t show: the moat, the management, the customers. Claude can give a short qualitative read. This sends one small request (just the summary numbers, not the filing), so it uses only a sliver of your Claude usage.</p>
+      <button class="btn primary" id="aiBtn" type="button">Get a qualitative read</button>
+      <div class="ai-out" id="aiOut" aria-live="polite"></div>
+    </section>
+
+    <section class="panel-box">
+      <details class="edit">
+        <summary>Check or fix the numbers</summary>
+        <p class="tiny" style="margin:8px 0 0">Pulled automatically from the SEC file. Dollar amounts are in millions; per-share amounts in dollars. If a value is blank or looks wrong (it happens with banks and unusual companies), type the number from the 10-K and every score updates.</p>
+        <div class="row" style="max-width:360px;margin-top:12px">
+          <label class="f">Shares outstanding (millions)<input type="number" step="any" id="sharesIn"></label>
+        </div>
+        <div class="edit-scroll"><table class="edit" id="editTable"></table></div>
+      </details>
+    </section>
+  </section>
+
+  <footer>
+    Verdicts are rule-based readings of each investor’s published criteria, applied to annual 10-K figures. They are not those investors’ actual opinions and not financial advice. Data comes from SEC XBRL filings; companies that report under international rules (most 20-F filers) aren’t supported.
+  </footer>
+</main>
+
+<script src="assets/core.js"></script>
+<script src="assets/ui.js"></script>
+<script src="assets/panel.js"></script>
+</body>
+</html>
