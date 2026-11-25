@@ -1,0 +1,373 @@
+(function(){
+"use strict";
+const C = PanelCore, UI = PanelUI;
+const {ORDER, BIO, esc} = C;
+const $ = s => document.querySelector(s);
+
+/* Every metric the panel uses, explained once. Examples use PepsiCo’s 2024 annual report (rounded) and a pretend share price of $150. */
+const G = {
+  sales:{name:"Sales (revenue)",
+    what:"Sales, also called revenue, is all the money a company takes in from customers before it pays any of its bills. It’s called the “top line” because it’s the first number on the income statement, the report that shows how much a company earned and spent during the year.",
+    how:"Add up the price of everything the company sold during the year. Companies report this number in their annual report, called the 10-K, which they must file with the SEC (the government agency that watches over the stock market).",
+    ex:"PepsiCo sold about $91.9 billion of chips, sodas, sports drinks and cereal in 2024. That’s its sales, before paying for a single potato, bottle or worker. It easily clears Graham’s size bar.",
+    watch:"Big sales don’t mean big profits. A company can sell a lot and still lose money if its costs are higher than its sales."},
+  currentRatio:{name:"Current ratio",
+    what:"The current ratio compares two lists. The first is current assets: things the company owns that will turn into cash within a year, like cash itself, money customers still owe it, and products waiting to be sold. The second is current liabilities: bills it must pay within a year, like money owed to suppliers, short-term loans, and wages.",
+    how:"Current assets ÷ current liabilities.",
+    ex:"PepsiCo had about $25.8 billion of current assets and $31.5 billion of current liabilities at the end of 2024. $25.8B ÷ $31.5B ≈ 0.82, so it has about 82 cents of short-term resources for every $1 of bills due within a year. That fails Graham’s test of 2, which is common for food and drink companies because stores pay them quickly.",
+    watch:"Some excellent companies run with a low current ratio on purpose because their customers pay right away (stores and restaurants often do). A very high ratio can also mean cash or products are sitting around unused."},
+  debtVsNCA:{name:"Long-term debt vs. net current assets",
+    what:"Long-term debt is money a company has borrowed that doesn’t have to be paid back for more than a year. Net current assets (also called working capital) is current assets minus current liabilities: the cushion left over after paying all the bills due within a year.",
+    how:"Compare the two numbers. The test passes if long-term debt is no bigger than net current assets.",
+    ex:"PepsiCo’s current assets ($25.8 billion) minus current liabilities ($31.5 billion) leave net current assets of about −$5.7 billion: a negative cushion. Its long-term debt is about $37.2 billion. Because $37.2B is far more than −$5.7B, PepsiCo fails this very strict test.",
+    watch:"This is a very strict test. Many strong modern companies borrow money on purpose because loans can be cheap, and they would fail it."},
+  profitEveryYear:{name:"Earnings stability (a profit every year)",
+    what:"Net income, also called profit or earnings, is what’s left after a company pays every cost: materials, workers, rent, advertising, interest on loans, and taxes. This test asks whether the company made a profit in every year on record, up to 10 years.",
+    how:"Look at net income for each year. If any year shows a loss (a negative number), the test fails.",
+    ex:"PepsiCo has made a profit every year on record. In 2024 its net income was about $9.6 billion. It passes.",
+    watch:"One bad year can come from a single unusual event, like a lawsuit or a factory fire. It’s worth reading why the loss happened before deciding the business is weak."},
+  dividendRecord:{name:"Dividend record",
+    what:"A dividend is cash a company pays its owners (shareholders) out of its profits, usually a little every three months. If you own shares, you get paid for each one you own.",
+    how:"Check whether the company paid a dividend in each year on record. Graham wanted 20 straight years. The SEC’s digital records usually go back about 15 years, so the site checks every year it has.",
+    ex:"PepsiCo paid about $7.2 billion in dividends in 2024, roughly $5.30 for each share, and has raised its dividend more than 50 years in a row. If you owned 100 shares, you’d receive about $530 a year in cash.",
+    watch:"Many great growing companies pay no dividend because they reinvest every dollar into growing the business. And when a company cuts its dividend, it’s often a warning sign that money is tight."},
+  grahamGrowth:{name:"Earnings growth over about 10 years",
+    what:"This checks whether earnings per share (EPS) grew over roughly a decade. EPS is net income divided by the number of shares: the slice of the year’s profit that belongs to each single share.",
+    how:"Average the EPS of the most recent 3 years. Average the EPS of the oldest 3 years. Then see how much bigger the new average is than the old one. Graham asked for at least 33% growth. Using 3-year averages keeps one lucky or unlucky year from fooling you.",
+    ex:"PepsiCo’s EPS averaged about $4.17 in 2012–2014 ($3.92, $4.32, $4.27) and about $6.64 in 2022–2024 ($6.42, $6.56, $6.95). $6.64 ÷ $4.17 − 1 ≈ 0.59, or 59% growth. That passes.",
+    watch:"33% over ten years is only about 3% a year, which is close to the rate prices rise from inflation. It’s a low bar, meant to weed out companies that are shrinking rather than to find fast growers."},
+  pe:{name:"Price-to-earnings ratio (P/E)",
+    what:"P/E tells you how many dollars you pay for each $1 of a company’s yearly profit. It’s the most common way investors judge whether a stock is cheap or expensive.",
+    how:"Share price ÷ earnings per share (EPS).",
+    ex:"PepsiCo earned $6.95 per share in 2024. If the stock costs $150, the P/E is $150 ÷ $6.95 ≈ 21.6. You’d pay about $21.60 for every $1 of yearly profit; if profits stayed flat, it would take about 22 years of earnings to “earn back” the price. (Graham averaged the last 3 years, $6.64, which gives $150 ÷ $6.64 ≈ 22.6, above his limit of 15.)",
+    watch:"A low P/E can mean a bargain, or it can mean investors expect profits to fall. A high P/E often means investors expect fast growth. P/E means nothing when a company is losing money, because you can’t divide by a loss in a useful way."},
+  pb:{name:"Price-to-book ratio (P/B)",
+    what:"Book value is what the owners would have left if the company sold everything it owns at the values written on its balance sheet and paid off everything it owes. (The balance sheet is the report listing what a company owns and owes.) Book value is also called shareholders’ equity. P/B compares the stock price with the book value of each share.",
+    how:"Book value per share = shareholders’ equity ÷ number of shares. Then P/B = share price ÷ book value per share. Graham also allowed a combined test: P/E × P/B no more than 22.5. That lets a stock with a very low P/E get away with a slightly higher P/B, and the other way around.",
+    ex:"PepsiCo’s shareholders’ equity was about $18.0 billion with about 1.37 billion shares, so its book value is about $13.10 per share. At $150, P/B ≈ $150 ÷ $13.10 ≈ 11.4, far above Graham’s 1.5. Much of PepsiCo’s value is in brands like Lay’s and Gatorade, which book value barely counts.",
+    watch:"Book value counts things you can touch, like factories and inventory, but it mostly misses things like brands, software, and patents. That’s why technology and brand-name companies almost always look “expensive” on P/B."},
+  roe:{name:"Return on equity (ROE)",
+    what:"ROE measures how much profit a company makes with the money its owners have in the business (shareholders’ equity). It answers the question: for every $1 the owners have invested, how many cents of profit does the company earn each year?",
+    how:"Net income ÷ shareholders’ equity, shown as a percent.",
+    ex:"PepsiCo earned about $9.6 billion with about $18.0 billion of equity: $9.6B ÷ $18.0B ≈ 53%. That looks spectacular, but part of the reason is debt: PepsiCo has borrowed a lot and bought back shares, which shrinks equity and makes ROE look bigger.",
+    watch:"Debt can make ROE look better than the business really is, because borrowing lets a company run with less equity. Big stock buybacks can even push equity below zero, which makes ROE meaningless. That’s why investors always check debt alongside ROE."},
+  debtYears:{name:"Debt ÷ yearly profit",
+    what:"This shows how many years of profit it would take to pay off all of the company’s debt.",
+    how:"Total debt (long-term plus short-term borrowing) ÷ net income.",
+    ex:"PepsiCo owes about $44.3 billion ($7.1 billion short-term plus $37.2 billion long-term) and earned about $9.6 billion in 2024. $44.3B ÷ $9.6B ≈ 4.6 years, just over Buffett’s line of 4.",
+    watch:"Utilities and real-estate companies borrow heavily by design, because their income is steady, so they often fail this test even when they’re healthy."},
+  epsConsistency:{name:"Consistent, rising earnings",
+    what:"This checks two things at once: the company never lost money in the years on record, and its earnings per share today are higher than they were about ten years ago.",
+    how:"Look for any year with a loss. Then compare the newest EPS with the oldest EPS on record.",
+    ex:"PepsiCo made a profit every year, and its EPS climbed from about $4.27 in 2014 to $6.95 in 2024. It passes.",
+    watch:"Smooth earnings are easier to predict, and predictable businesses are easier to value. Companies whose profits swing wildly from year to year, like airlines or steelmakers, are much harder to judge."},
+  grossMargin:{name:"Gross margin",
+    what:"Gross profit is sales minus the direct cost of making or buying what was sold: materials, factory workers, and getting products to the store. Gross margin is gross profit as a percent of sales. It tells you how many cents of every sales dollar are left after paying for the product itself.",
+    how:"(Sales − cost of goods sold) ÷ sales.",
+    ex:"PepsiCo had $91.9 billion of sales, and the products themselves cost about $41.7 billion to make. Gross profit is about $50.1 billion, so gross margin is $50.1B ÷ $91.9B ≈ 54.6%. For every dollar a customer pays, about 55 cents is left after making the product.",
+    watch:"Margins differ a lot from industry to industry. Grocery stores have thin gross margins (around 25–30%) even when they’re run very well, while software companies often top 70%. Compare companies within the same industry."},
+  netMargin:{name:"Net profit margin",
+    what:"Net margin is the share of every sales dollar that ends up as profit after every single expense: products, workers, advertising, research, interest, and taxes.",
+    how:"Net income ÷ sales.",
+    ex:"PepsiCo turned $91.9 billion of sales into about $9.6 billion of net income: $9.6B ÷ $91.9B ≈ 10.4%. It keeps about 10 cents of every dollar customers pay.",
+    watch:"A one-time event, like selling a building, can make net income jump for a single year. Look at several years to see the normal level."},
+  capexProfit:{name:"Capital spending ÷ profit",
+    what:"Capital spending (often shortened to “capex”) is money spent on long-lasting things: factories, machines, stores, trucks, and computers. Some businesses must spend heavily every year just to keep running; others need very little.",
+    how:"Add up capital spending over 5 years and divide by net income over the same 5 years.",
+    ex:"In 2024 PepsiCo spent about $5.3 billion on factories, trucks and equipment and earned about $9.6 billion. $5.3B ÷ $9.6B ≈ 55%, a bit above Buffett’s line of 50%. Making and delivering snacks and drinks takes a lot of equipment.",
+    watch:"Spending to grow (opening new stores) is different from spending just to stay in place (replacing worn-out machines). Company reports don’t always separate the two."},
+  ownerEarnings:{name:"Owner-earnings yield",
+    what:"Owner earnings is Buffett’s estimate of the cash a business really produces for its owners each year: profit, plus depreciation, minus capital spending. (Depreciation is an accounting expense that spreads the cost of equipment over its life; no cash actually leaves the company when it’s recorded.) The yield compares owner earnings with the price of the whole company, the way an interest rate compares interest with the money in a savings account.",
+    how:"(Net income + depreciation − capital spending) ÷ market value. Market value = share price × number of shares.",
+    ex:"PepsiCo’s owner earnings for 2024 were about $9.6 billion of profit + $3.2 billion of depreciation − $5.3 billion of capital spending ≈ $7.5 billion. At $150 a share, the whole company is worth about $150 × 1.37 billion shares ≈ $206 billion. $7.5B ÷ $206B ≈ 3.6%. If a 10-year Treasury bond pays 4.5%, the safe bond pays more, so this fails Buffett’s test at that price.",
+    watch:"The site subtracts all capital spending, which is stricter than Buffett’s own version. He subtracted only the spending needed to keep the business as it is, not spending to grow it."},
+  peg:{name:"PEG ratio",
+    what:"PEG adjusts the P/E ratio for how fast earnings are growing. A P/E of 30 can be a bargain for a company whose profits grow 40% a year, and a P/E of 10 can be expensive for a company that isn’t growing at all.",
+    how:"P/E ÷ the yearly growth rate of earnings per share, written as a whole number (15% growth is written as 15). The site uses the average yearly growth over the last 5 years.",
+    ex:"At $150, PepsiCo’s P/E is about 21.6. Its EPS grew about 6% a year from 2019 to 2024. 21.6 ÷ 6 ≈ 3.6, far above Lynch’s line of 1. Lynch would say you’re paying a lot for slow, steady growth.",
+    watch:"Past growth doesn’t guarantee future growth. If growth slows down, a stock that looked cheap on PEG can turn out to be expensive."},
+  totalReturn:{name:"Growth plus dividend ÷ P/E (total return ratio)",
+    what:"This is a version of PEG that gives credit for dividends, because dividends are part of what an owner earns. Peter Lynch used it for companies that pay dividends. John Neff made it the center of his whole method and called it the “total return ratio.”",
+    how:"(Yearly EPS growth rate + dividend yield) ÷ P/E, with both percents written as whole numbers.",
+    ex:"PepsiCo’s EPS grew about 6% a year, and at $150 its dividend of about $5.30 is a 3.5% yield. With a P/E of about 21.6: (6 + 3.5) ÷ 21.6 ≈ 0.44. That’s well below Lynch’s 1.5 and Neff’s 2.",
+    watch:"Like PEG, it assumes past growth will continue. It also favors dividend payers, so fast growers that pay no dividend can score lower than they deserve."},
+  de:{name:"Debt-to-equity",
+    what:"Debt-to-equity compares how much a company has borrowed with how much its owners have invested. It shows how much the business depends on borrowed money.",
+    how:"Total debt ÷ shareholders’ equity.",
+    ex:"PepsiCo owes about $44.3 billion, and its equity is about $18.0 billion. $44.3B ÷ $18.0B ≈ 2.5: for every $1 the owners have in the business, PepsiCo has borrowed about $2.50. That’s well above Lynch’s 0.5.",
+    watch:"Debt isn’t always bad; it can help a company grow faster. But when sales fall, the loan payments still come due, and that’s how companies end up bankrupt."},
+  netCash:{name:"Net cash",
+    what:"Net cash is the company’s cash and short-term investments minus everything it has borrowed. Positive net cash means it could pay off all its debt today and still have money left over.",
+    how:"Cash + short-term investments − total debt. Lynch liked to divide it by the number of shares and subtract it from the share price, to see what you’re really paying for the business itself.",
+    ex:"PepsiCo had about $9.3 billion of cash and short-term investments but about $44.3 billion of debt. Net cash is about $9.3B − $44.3B ≈ −$35 billion, or about −$25.50 per share. PepsiCo has net debt, not net cash, so it fails Lynch’s test.",
+    watch:"Some cash may be stuck overseas or set aside for a specific purpose, so it isn’t always as free to use as it looks."},
+  inventory:{name:"Inventory vs. sales",
+    what:"Inventory is products a company has made or bought but hasn’t sold yet, sitting in warehouses and on store shelves. If inventory grows faster than sales, products may not be selling as hoped, and the company may have to cut prices later to clear them out.",
+    how:"Compare this year’s percent change in inventory with this year’s percent change in sales.",
+    ex:"PepsiCo’s inventory slipped from about $5.33 billion to $5.31 billion in 2024 (down 0.5%), while sales rose about 0.4%. Inventory grew no faster than sales, so it passes.",
+    watch:"Sometimes a company builds up inventory on purpose before a big product launch or the holiday season. Service and software companies often have no inventory at all, so the test doesn’t apply to them."},
+  salesGrowth:{name:"Sales growth over 5 years",
+    what:"This measures how fast sales have grown each year, on average, over the last five years.",
+    how:"The average yearly growth rate from sales five years ago to sales today. This kind of average is called a compound annual growth rate, or CAGR, because each year’s growth builds on the year before.",
+    ex:"PepsiCo’s sales grew from about $67.2 billion in 2019 to $91.9 billion in 2024, a 37% increase. That works out to about 6.5% a year, because $67.2B × 1.065 × 1.065 × 1.065 × 1.065 × 1.065 ≈ $92B. That’s below Fisher’s 10% but above Slegers’ 5%.",
+    watch:"Growth that comes from buying other companies is less impressive than growth from selling more of your own products."},
+  salesUp:{name:"Growth that keeps going",
+    what:"This checks whether sales rose in most individual years, not just from the start to the finish.",
+    how:"Count how many of the last 5 years sales went up compared with the year before.",
+    ex:"PepsiCo’s sales rose every year from 2019 to 2024: about $67.2B, $70.4B, $79.5B, $86.4B, $91.5B, then $91.9B. That’s 5 of 5 years up. It passes.",
+    watch:"One down year during a recession isn’t a disaster. Several down years in a row usually means trouble."},
+  rd:{name:"Research & development (R&D) spending",
+    what:"R&D is money spent inventing and improving products: scientists, engineers, testing, and new designs. It’s an investment in the products the company will sell years from now.",
+    how:"R&D expense ÷ sales.",
+    ex:"PepsiCo spends under 1% of its sales on R&D, well below Fisher’s 3%. Snack and drink recipes don’t need the kind of research a drug or chip company does; PepsiCo competes more on brands and delivery.",
+    watch:"Spending a lot doesn’t guarantee results; what matters is whether research turns into products people buy. Many good businesses, like stores, report no R&D at all, so the site skips the test for them."},
+  opMargin:{name:"Operating margin",
+    what:"Operating income is profit from the company’s main business after paying for products, workers, rent, advertising, and research, but before interest on loans and taxes. Operating margin shows how much of each sales dollar that is.",
+    how:"Operating income ÷ sales.",
+    ex:"PepsiCo earned about $12.9 billion of operating income on $91.9 billion of sales: $12.9B ÷ $91.9B ≈ 14.0%, just under Fisher’s 15%.",
+    watch:"Compare within an industry: a 5% operating margin is normal for a supermarket but poor for a software company."},
+  marginTrend:{name:"Margins improving",
+    what:"This checks whether the operating margin today is at least as high as it was five years ago.",
+    how:"Compare operating margin now with operating margin five years ago.",
+    ex:"PepsiCo’s operating margin was about 15.3% in 2019 and about 14.0% in 2024. It slipped, so this fails.",
+    watch:"Margins can rise for a while when a company cuts research or advertising, and that can hurt it later. Ask why margins changed."},
+  shares:{name:"Share count (dilution)",
+    what:"A share is a small slice of ownership in a company. When a company creates new shares, by selling them or giving them to employees, every existing share becomes a smaller slice of the company. This is called dilution.",
+    how:"Compare the number of shares today with earlier years. The site uses “diluted” shares, which also counts stock options that employees could turn into shares.",
+    ex:"PepsiCo had about 1.37 billion shares at the start of 2025, a bit fewer than five years earlier, because it buys back some of its own stock each year. If you owned 1.37 million shares, you’d own about 0.1% of PepsiCo, and buybacks make your slice slowly bigger.",
+    watch:"Companies that buy back their own shares do the opposite: each remaining share becomes a bigger slice. Stock splits change the number of shares without changing anyone’s slice, so the site adjusts for them."},
+  eyEV:{name:"Earnings yield (Greenblatt’s version)",
+    what:"This measures how much the whole business earns compared with what it would cost to buy the entire company, including paying off its debt. It’s like the P/E ratio flipped upside down, but fairer when comparing companies with and without debt.",
+    how:"Operating profit before interest and taxes (called EBIT) ÷ enterprise value. Enterprise value = market value of all shares + debt − cash.",
+    ex:"At $150 a share, PepsiCo’s stock is worth about $206 billion. Add about $44.3 billion of debt and subtract about $9.3 billion of cash: enterprise value ≈ $241 billion. Its EBIT was about $12.9 billion. $12.9B ÷ $241B ≈ 5.4%, below Greenblatt’s 8%.",
+    watch:"It uses only one year of profit, so an unusually good or bad year can mislead you."},
+  roc:{name:"Return on capital (Greenblatt’s version)",
+    what:"This measures how much operating profit a business earns from the money tied up in actually running it: its working capital (inventory and money customers owe it, minus bills due) and its buildings and equipment.",
+    how:"EBIT ÷ (net working capital + buildings and equipment after depreciation).",
+    ex:"PepsiCo’s net working capital is actually negative (stores pay PepsiCo faster than PepsiCo pays its suppliers), so it counts as zero. Its buildings and equipment are worth about $28.0 billion. EBIT of $12.9B ÷ $28.0B ≈ 46%, well above Greenblatt’s 25%.",
+    watch:"Companies that need very little equipment, like software makers or consultants, can show sky-high numbers. That’s real, but compare companies within the same industry."},
+  roa:{name:"Return on assets (ROA)",
+    what:"ROA measures profit compared with everything the company owns: cash, buildings, machines, inventory, and more.",
+    how:"Net income ÷ total assets at the start of the year.",
+    ex:"PepsiCo earned about $9.6 billion in 2024 and owned about $100.5 billion of assets at the start of the year: $9.6B ÷ $100.5B ≈ 9.5%. That’s above zero, but a little lower than about 9.8% the year before.",
+    watch:"Banks naturally have a low ROA, around 1%, because they hold huge amounts of loans. Compare similar businesses."},
+  cfo:{name:"Operating cash flow",
+    what:"Operating cash flow is the actual cash that came into the company from running the business during the year, after paying suppliers, workers, and taxes. Profit can include money customers haven’t paid yet; cash flow only counts money that really arrived.",
+    how:"It’s reported on the cash flow statement as “cash provided by operating activities.”",
+    ex:"PepsiCo’s operating cash flow in 2024 was about $12.5 billion: real cash that came in from selling snacks and drinks, after paying suppliers, workers and taxes.",
+    watch:"A company can report a profit and still run out of cash if customers pay late or not at all."},
+  accruals:{name:"Earnings are real (cash flow vs. profit)",
+    what:"This compares the cash the business brought in with the profit it reported. When cash flow is higher than profit, the profit is backed by real money.",
+    how:"Check whether operating cash flow is greater than net income.",
+    ex:"PepsiCo brought in about $12.5 billion of operating cash flow and reported about $9.6 billion of net income. Cash beat profit by about 30%, so it passes.",
+    watch:"Fast-growing companies sometimes show lower cash flow simply because they’re building up inventory to keep up with demand."},
+  leverageChange:{name:"Less debt than last year",
+    what:"This checks whether long-term debt became a smaller part of the company’s assets compared with a year earlier.",
+    how:"Long-term debt ÷ average total assets, this year compared with last year.",
+    ex:"PepsiCo’s long-term debt was about 39% of its assets in 2023 and about 37% in 2024. It went down, so this passes.",
+    watch:"Borrowing to build a great new factory can be smart. But Piotroski’s research found that among cheap stocks, improving balance sheets tended to go with better stock results."},
+  crChange:{name:"Better able to pay bills",
+    what:"This checks whether the current ratio (current assets ÷ current liabilities) went up compared with last year, meaning the company has more short-term breathing room.",
+    how:"Compare this year’s current ratio with last year’s.",
+    ex:"PepsiCo’s current ratio went from about 0.85 in 2023 to about 0.82 in 2024. It went down, so this fails.",
+    watch:"Small changes can come from timing, like paying a big bill on December 31 instead of January 2."},
+  gmChange:{name:"Better margins than last year",
+    what:"This checks whether gross margin rose from last year. Rising gross margins suggest the company can charge more or is making its products more cheaply.",
+    how:"Compare this year’s gross margin with last year’s.",
+    ex:"PepsiCo’s gross margin rose from about 54.2% in 2023 to about 54.6% in 2024. It passes.",
+    watch:"A change in which products sold the most can move margins without the business really getting better or worse."},
+  assetTurnover:{name:"Asset turnover",
+    what:"Asset turnover measures how many dollars of sales a company produces from each $1 of assets it owns. Higher turnover means the company is using its buildings, machines, and inventory more efficiently.",
+    how:"Sales ÷ total assets at the start of the year. Piotroski checks whether it went up from last year.",
+    ex:"PepsiCo made $91.9 billion of sales with about $100.5 billion of assets at the start of 2024: a turnover of about 0.91. The year before it was about 0.99. It went down, so this fails.",
+    watch:"Grocery stores naturally have high turnover and power companies very low turnover, so compare a company with itself over time."},
+  roic:{name:"Return on invested capital (ROIC)",
+    what:"ROIC is like return on equity, but it counts all the money invested in the business, from owners and from lenders, so borrowing can’t make it look better than it is. It also uses profit after taxes.",
+    how:"Operating profit × (1 − tax rate) ÷ (equity + debt − cash).",
+    ex:"PepsiCo’s operating profit was about $12.9 billion and its tax rate about 19%, leaving about $10.4 billion after tax. Its equity (about $18.0 billion) plus debt ($44.3 billion) minus cash ($9.3 billion) is about $53 billion invested. $10.4B ÷ $53B ≈ 20%, above Slegers’ 15%.",
+    watch:"A high ROIC that lasts for many years is one of the best signs of a “moat”: something, like a strong brand or a special technology, that keeps competitors from taking the profits away."},
+  interestCov:{name:"Interest coverage",
+    what:"Interest coverage shows how many times over a company’s operating profit could pay the interest on its debt. It measures how safe the debt is.",
+    how:"Operating profit (EBIT) ÷ interest expense.",
+    ex:"PepsiCo’s EBIT was about $12.9 billion, and its net interest cost was about $0.9 billion. $12.9B ÷ $0.9B ≈ 14 times, just under Slegers’ line of 15.",
+    watch:"Companies with no debt have no interest to cover, so the site counts them as passing."},
+  netDebtFCF:{name:"Net debt ÷ free cash flow",
+    what:"This shows how many years of free cash flow it would take to pay off the company’s debt after first using the cash it already has. (Free cash flow is operating cash flow minus capital spending: the cash left over after keeping the business running.)",
+    how:"(Total debt − cash) ÷ free cash flow. If cash is bigger than debt, the company has net cash and passes.",
+    ex:"PepsiCo’s debt (about $44.3 billion) minus cash (about $9.3 billion) is about $35 billion. Its free cash flow was about $12.5 billion − $5.3 billion ≈ $7.2 billion. $35B ÷ $7.2B ≈ 4.9 years, above Slegers’ line of 4.",
+    watch:"Free cash flow can swing from year to year, so one weak year can make this number jump."},
+  goodwill:{name:"Goodwill ÷ assets",
+    what:"When one company buys another for more than the value of its assets, the extra amount is recorded as “goodwill.” It stands for things like the bought company’s brand and customers, but it can’t be sold separately.",
+    how:"Goodwill ÷ total assets.",
+    ex:"PepsiCo carries about $17.5 billion of goodwill from buying companies over the years. With about $99.5 billion of total assets, that’s $17.5B ÷ $99.5B ≈ 17.6%, under Slegers’ 20%.",
+    watch:"Lots of goodwill means much of the company’s growth was bought rather than built. If a purchase goes badly, the goodwill gets written off as a big loss."},
+  capexSales:{name:"Capital spending ÷ sales",
+    what:"This compares how much the company spends on buildings and equipment with how much it sells.",
+    how:"Capital spending ÷ sales.",
+    ex:"PepsiCo spent about $5.3 billion on equipment and had about $91.9 billion of sales: $5.3B ÷ $91.9B ≈ 5.8%, just over Slegers’ 5%.",
+    watch:"Railroads, oil drillers, and chip makers need heavy spending by nature, so they rarely pass even when they’re well run."},
+  capexOCF:{name:"Capital spending ÷ operating cash flow",
+    what:"This shows how much of the cash the business brings in has to go right back into buildings and equipment.",
+    how:"Capital spending ÷ operating cash flow.",
+    ex:"PepsiCo brought in about $12.5 billion of operating cash flow and spent about $5.3 billion on equipment: $5.3B ÷ $12.5B ≈ 42%, above Slegers’ 25%.",
+    watch:"A company in a big building phase can fail this for a few years and still be a great business afterward."},
+  fcfConv:{name:"Free cash flow ÷ net income (cash conversion)",
+    what:"Free cash flow is operating cash flow minus capital spending: the cash left that a company can use for dividends, buying back shares, paying down debt, or buying other companies. This checks how much of the reported profit turns into that free cash.",
+    how:"Free cash flow ÷ net income for each of the last 5 years, then averaged.",
+    ex:"In 2024 PepsiCo’s free cash flow was about $7.2 billion and its net income about $9.6 billion: $7.2B ÷ $9.6B ≈ 75%. Slegers averages five years and wants more than 80%.",
+    watch:"A loss year makes the ratio meaningless, so any loss in the 5 years fails the test."},
+  sbc:{name:"Stock-based compensation ÷ net income",
+    what:"Many companies pay employees partly in stock instead of cash. It doesn’t cost the company cash, but it creates new shares, which shrinks every existing owner’s slice of the company.",
+    how:"Stock-based compensation expense ÷ net income.",
+    ex:"PepsiCo’s stock-based pay in 2024 was about $362 million, against about $9.6 billion of profit: $0.362B ÷ $9.6B ≈ 3.8%, comfortably under Slegers’ 10%.",
+    watch:"Technology companies often pay heavily in stock, sometimes more than 30% of their profit."},
+  epsGrowth5:{name:"EPS growth over 5 years",
+    what:"This measures how fast earnings per share grew each year, on average, over the past five years.",
+    how:"The compound annual growth rate (CAGR) from EPS five years ago to EPS today.",
+    ex:"PepsiCo’s EPS grew from about $5.20 in 2019 to $6.95 in 2024, a 34% increase. That’s about 6% a year, under Slegers’ 7%. (Neff wanted 7% to 20%.)",
+    watch:"If EPS was unusually low five years ago, because of a bad year, the growth rate will look higher than the business’s true pace."},
+  forecast:{name:"Analyst forecasts",
+    what:"Analysts are professionals at banks and research firms who study companies and estimate their future sales and earnings. Slegers checks whether those estimates still show healthy growth ahead.",
+    how:"You type these in from the Analysis tab on Yahoo Finance. For the next two years, the site averages this year’s and next year’s growth estimates. The long-term estimate is the yearly growth analysts expect over the next several years.",
+    ex:"Suppose analysts expected PepsiCo’s EPS to grow 4% this year and 6% next year. The two-year average is about 5% a year, which would fall short of Slegers’ 7%. Look up the real estimates on Yahoo Finance’s Analysis tab.",
+    watch:"Forecasts are educated guesses, and they’re often wrong, especially the further into the future they reach."},
+  divYield:{name:"Dividend yield",
+    what:"Dividend yield is the yearly dividend as a percent of the share price: the return you get in cash just for owning the stock.",
+    how:"Yearly dividend per share ÷ share price.",
+    ex:"PepsiCo pays about $5.30 per share a year. At a price of $150: $5.30 ÷ $150 ≈ 3.5%, above Neff’s 2%.",
+    watch:"A very high yield can mean the stock price has crashed because investors expect the dividend to be cut."},
+  fcfPositive:{name:"Positive free cash flow",
+    what:"This checks that the company had cash left over after investing in its business (free cash flow) in each of the last three years.",
+    how:"Operating cash flow − capital spending, for each of the last 3 years.",
+    ex:"PepsiCo’s free cash flow has been positive year after year; in 2024 it was about $7.2 billion. It passes.",
+    watch:"A company in the middle of building something big can have negative free cash flow for a while and still be healthy."},
+  epsUp:{name:"Earnings keep climbing",
+    what:"This counts how many of the last five years earnings per share rose from the year before.",
+    how:"Compare each year’s EPS with the year before it, for the last 5 years.",
+    ex:"PepsiCo’s EPS from 2019 to 2024 was about $5.20, $5.12, $5.49, $6.42, $6.56 and $6.95. It rose in 4 of the 5 years (it dipped in 2020, the pandemic year). It passes.",
+    watch:"Recessions hit almost every company, so one down year isn’t a deal-breaker."}
+};
+
+/* Each investor's checklist, in the same order the site scores it: [metric, his rule, why he cared]. */
+const L = {
+  graham:{idea:"Buy solid, established companies only when the price is low enough that you’re protected even if things go wrong. Graham called this the “margin of safety.”", items:[
+    ["sales","Sales of at least $760 million in today’s dollars ($100 million in 1973)","Graham wanted companies big enough to survive recessions. He thought small companies were too risky for a careful investor."],
+    ["currentRatio","At least 2","He wanted a company that could easily pay its bills even if business got bad."],
+    ["debtVsNCA","Long-term debt no bigger than net current assets","Debt that working capital alone could cover meant lenders could never sink the company."],
+    ["profitEveryYear","A profit in every year on record (up to 10)","Steady profits through good times and bad showed the business was durable."],
+    ["dividendRecord","A dividend in every year on record (he asked for 20 years)","A long dividend record proved the company reliably produced real cash for its owners."],
+    ["grahamGrowth","At least 33% growth over about 10 years","He didn’t need fast growth, only proof that the business wasn’t shrinking."],
+    ["pe","No more than 15, using average EPS from the last 3 years","Averaging three years kept one great year from making a stock look cheap. A P/E of 15 or less gave him room for things to go wrong."],
+    ["pb","P/B no more than 1.5, or P/E × P/B no more than 22.5","He didn’t want to pay much more than the company’s net assets were worth, so the assets would back up his investment even in a bad case."]]},
+  buffett:{idea:"Buy wonderful businesses, ones with a lasting advantage that lets them earn high returns year after year, at a fair price, and hold them for a very long time.", items:[
+    ["roe","At least 15% on average over the last 5 years","High ROE was Buffett’s favorite sign of a wonderful business: one that earns a lot without needing much money from its owners."],
+    ["roe","At least 10% in each of the last 5 years","A real competitive advantage shows up as steady returns, not one great year."],
+    ["debtYears","Total debt no more than 4 years of profit","He liked companies that could pay off all their debt quickly and never depended on lenders."],
+    ["epsConsistency","No losses, and EPS higher than a decade ago","Predictable earnings let him estimate what a business is worth with confidence."],
+    ["grossMargin","At least 40%","High gross margins often signal pricing power: customers keep buying even when the company charges more, usually because of a strong brand or a product people need."],
+    ["netMargin","At least 10%","He wanted a business that turns a good share of each sale into profit for its owners."],
+    ["capexProfit","Capital spending no more than 50% of profit over 5 years","Businesses that don’t need to keep pouring money into equipment can hand more cash to their owners."],
+    ["ownerEarnings","At least the 10-year Treasury yield","If a safe government bond pays more than the business earns for its price, why take the risk of owning a stock?"]]},
+  lynch:{idea:"Invest in what you know, understand what kind of company you own, and don’t overpay for its growth.", items:[
+    ["peg","PEG of 1 or less","Lynch’s famous rule of thumb: a fairly priced stock has a P/E about equal to its growth rate, so under 1 means you’re not overpaying for growth."],
+    ["totalReturn","(Growth + yield) ÷ P/E of at least 1.5","For dividend payers he gave credit for the dividend: 1 was poor, 1.5 okay, and 2 or more excellent."],
+    ["de","Debt-to-equity of 0.5 or less","A company without much debt can’t be pushed into bankruptcy by a bad stretch."],
+    ["netCash","More cash than debt","Lynch liked to subtract net cash per share from the price to see what he was really paying for the business."],
+    ["inventory","Inventory growing no faster than sales","He watched for products piling up unsold, an early warning he learned from visiting stores."]]},
+  fisher:{idea:"Find outstanding companies that can keep growing for many years, research them deeply by talking to the people around them, and hold them for decades.", items:[
+    ["salesGrowth","At least 10% a year over 5 years","Fisher hunted for companies whose sales could keep growing for years."],
+    ["salesUp","Sales up in at least 4 of the last 5 years","He wanted steady expansion, not a one-time jump."],
+    ["rd","R&D at least 3% of sales","He asked whether research would produce the next generation of products."],
+    ["opMargin","At least 15%","Fat margins give a company room to invest in its future and to survive competition."],
+    ["marginTrend","At least as high as 5 years ago","He wanted managers who keep finding ways to run the business better."],
+    ["shares","Share count growing no more than 1% a year","Issuing lots of new stock shrinks each owner’s slice of the company’s future growth."]]},
+  greenblatt:{idea:"Buy good businesses at bargain prices, and let a simple formula do the choosing so emotions don’t get in the way.", items:[
+    ["eyEV","At least 8%","This is the “cheap” half of his Magic Formula: what the whole business earns compared with what it would cost to buy."],
+    ["roc","At least 25%","This is the “good” half: a business that earns a lot from a little equipment and working capital."]]},
+  piotroski:{idea:"Among cheap stocks, pick the ones whose financial health is improving, using nine simple yes-or-no checks.", items:[
+    ["roa","Greater than 0","Is the company making money at all?"],
+    ["cfo","Greater than 0","Profits should show up as real cash."],
+    ["roa","Higher than last year","Improvement matters more than the level."],
+    ["accruals","Operating cash flow greater than net income","When cash beats reported profit, accounting tricks are less likely."],
+    ["leverageChange","Long-term debt ÷ assets went down","Borrowing less, or not at all, is a sign of strength."],
+    ["crChange","Current ratio went up","More short-term breathing room than a year ago."],
+    ["shares","Share count didn’t rise","Healthy companies don’t need to sell more stock to raise money."],
+    ["gmChange","Gross margin went up","Rising margins suggest pricing power or lower costs."],
+    ["assetTurnover","Asset turnover went up","More sales from each dollar of assets."]]},
+  slegers:{idea:"Own a small number of high-quality companies (ones with lasting advantages, strong finances and steady growth) and let them compound for years.", items:[
+    ["grossMargin","Greater than 40%","Sustainable competitive advantage: high gross margins show customers will pay up for the product."],
+    ["roic","Greater than 15%","Sustainable competitive advantage: a business that earns high returns on all the money invested in it."],
+    ["interestCov","Greater than 15 times","Healthy balance sheet: debt should never be a threat."],
+    ["netDebtFCF","Less than 4 years","Healthy balance sheet: the company could pay off its debt quickly from free cash flow."],
+    ["goodwill","Less than 20%","Healthy balance sheet: growth should be built, not bought."],
+    ["capexSales","Less than 5%","Capital needs: the less a company must spend on equipment, the more it can put toward growth."],
+    ["capexOCF","Less than 25%","Capital needs: most of the cash coming in should be free to use."],
+    ["roe","Greater than 20%","Capital allocation: management should earn a lot on the owners’ money."],
+    ["roic","Greater than 15%","Capital allocation: the money management reinvests should earn high returns."],
+    ["grossMargin","Greater than 40%","Profitability: plenty left from each sale after making the product."],
+    ["netMargin","Greater than 10%","Profitability: a good share of each sale becomes profit."],
+    ["fcfConv","Greater than 80%, averaged over 5 years","Profitability: Slegers says cash flow matters more than earnings."],
+    ["sbc","Less than 10%","Stock-based compensation: paying employees in stock is a real cost to owners."],
+    ["salesGrowth","Greater than 5% a year over 5 years","Did the company grow? Sales growth is the engine of long-term returns."],
+    ["epsGrowth5","Greater than 7% a year over 5 years","Did the company grow? Over time a stock tends to follow its earnings per share."],
+    ["forecast","Expected revenue growth over the next 2 years greater than 5% a year","Does the future look bright? Growth should continue, not just have happened."],
+    ["forecast","Expected EPS growth over the next 2 years greater than 7% a year","Does the future look bright? Earnings should keep compounding."],
+    ["forecast","Long-term EPS growth estimate greater than 7% a year","Does the future look bright? He wants years of growth ahead."]]},
+  neff:{idea:"Buy solid, growing companies that other investors have given up on, collect a good dividend while you wait, and sell once the crowd catches on.", items:[
+    ["pe","No more than 12","Neff bought stocks other investors were ignoring, usually at P/Es far below the market’s."],
+    ["epsGrowth5","Between 7% and 20% a year","He wanted real growth but distrusted very fast growers, which he thought rarely last."],
+    ["divYield","At least 2%","A solid dividend pays you while you wait and cushions the stock if the market falls."],
+    ["totalReturn","At least 2","His signature measure. He looked for stocks scoring about twice the market’s ratio."],
+    ["fcfPositive","Positive in each of the last 3 years","Cash left over after investing backs up the dividend and the earnings."],
+    ["epsUp","EPS up in at least 3 of the last 5 years","He wanted a solid case that earnings would keep growing, not a one-year blip."]]}
+};
+
+let sel = ORDER.includes(location.hash.slice(1)) ? location.hash.slice(1) : "graham";
+
+function render(){
+  $("#lpicker").innerHTML = ORDER.map(k => `<button type="button" data-k="${k}" aria-pressed="${k === sel}">${UI.avatar(k)}<span><b>${esc(UI.nameOf(k))}</b><small>${esc(STYLE[k])}</small></span></button>`).join("");
+  $("#lpicker").querySelectorAll("button").forEach(b => b.addEventListener("click", () => open(b.dataset.k, true)));
+  const learn = UI.LEARN[sel], inv = L[sel];
+  $("#lprofile").innerHTML = `${UI.avatar(sel, "lg")}<div>
+    <h2>${esc(UI.nameOf(sel))}</h2>
+    <p class="tiny" style="margin:0 0 8px">${esc(STYLE[sel])}</p>
+    <p>${esc(BIO[sel].bio)}</p>
+    <p><b>Worked for:</b> ${esc(BIO[sel].worked)}</p>
+    <p class="bigidea"><b>His big idea:</b> ${esc(inv.idea)}</p>
+    <a href="${learn[1]}" target="_blank" rel="noopener">Learn more on ${esc(learn[0])} →</a>
+  </div>`;
+  const nm = UI.nameOf(sel);
+  $("#lcount").textContent = `${nm}${nm.endsWith("s") ? "’" : "’s"} checklist: ${inv.items.length} tests, explained`;
+  $("#llist").innerHTML = inv.items.map(([key, rule, take], i) => {
+    const g = G[key];
+    return `<details class="lesson"${i === 0 ? " open" : ""}>
+      <summary><span class="lnum">${i + 1}</span><span class="lname">${esc(g.name)}</span><span class="lrule">${esc(rule)}</span></summary>
+      <div class="lbody">
+        <h4>What it is</h4><p>${esc(g.what)}</p>
+        <h4>How to figure it out</h4><p>${esc(g.how)}</p>
+        <h4>Example</h4><p class="lex">${esc(g.ex)}</p>
+        <h4>Why ${esc(UI.nameOf(sel).split(" ").pop())} cares</h4><p>${esc(take)} <b>His line:</b> ${esc(rule)}.</p>
+        <h4>Watch out for</h4><p>${esc(g.watch)}</p>
+      </div>
+    </details>`;
+  }).join("");
+}
+const STYLE = {graham:"Deep value · 1930s–70s", buffett:"Quality at a fair price · 1960s–", lynch:"Growth at a reasonable price · 1977–90", fisher:"Long-term growth · 1950s–90s", greenblatt:"The Magic Formula · 1985–", piotroski:"The F-Score · 2000–", slegers:"Quality compounding · 2020s–", neff:"Low-P/E value · 1964–95"};
+
+function open(k, fromClick){
+  if (!ORDER.includes(k)) return;
+  sel = k; render();
+  if (fromClick && ORDER.includes(location.hash.slice(1))) history.replaceState(null, "", "#" + k);
+  else if (fromClick && !location.hash) history.replaceState(null, "", "#" + k);
+  if (fromClick) $("#lprofile").scrollIntoView({behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block:"start"});
+}
+$("#expandAll").addEventListener("click", () => {
+  const all = [...document.querySelectorAll("#llist details")], openAll = all.some(d => !d.open);
+  all.forEach(d => { d.open = openAll; });
+  $("#expandAll").textContent = openAll ? "Collapse all" : "Expand all";
+});
+window.addEventListener("hashchange", () => { const k = location.hash.slice(1); if (ORDER.includes(k)){ sel = k; render(); } });
+// Lets other pages (and the Claude preview) open a specific investor.
+window.LearnPage = {open: k => open(k, false)};
+render();
+})();
